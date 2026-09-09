@@ -80,7 +80,9 @@ src/
 │   ├── calculator.ts          # state-transition functions: digit entry, operator, percent, clear-entry,
 │   │                          # clear-all, backspace, equals
 │   ├── calculator.types.ts    # CalculatorState, Operator, and related types
-│   └── calculator.test.ts     # Vitest unit tests, written before the implementation (Principle III)
+│   ├── calculator.test.ts     # Vitest unit tests, written before the implementation (Principle III)
+│   ├── keymap.ts              # pure mapKeyToAction(key) lookup table used by useCalculator's keydown listener
+│   └── keymap.test.ts         # Vitest unit tests for every keyboard binding, written before keymap.ts (Principle III)
 ├── components/
 │   ├── Display.tsx            # renders current value / N/A / "exceeded the max digits"
 │   ├── Keypad.tsx             # renders on-screen buttons, wires clicks to the hook

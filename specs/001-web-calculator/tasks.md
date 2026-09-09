@@ -57,13 +57,14 @@ Single frontend project per plan.md's Structure Decision — `src/` at the repos
 
 ### Tests for User Story 1 (write first, confirm they fail)
 
-- [ ] T012 [US1] Write failing Vitest tests for `selectOperator()` (add/subtract/multiply/divide, replacing an already-pending operator) and `equals()` (correct results for all four operators, divide-by-zero → `"N/A"`, a result over 10 digits → `"exceeded the max digits"`, equals with no pending operation is a no-op, repeated equals with no new input is idempotent) in `src/domain/calculator.test.ts` (depends on T007)
+- [ ] T012 [US1] Write failing Vitest tests for `selectOperator()` (add/subtract/multiply/divide, replacing an already-pending operator, and — per data-model.md's error-recovery rules — pressing an operator while `isError` is true discards the error and starts a fresh calculation) and `equals()` (correct results for all four operators, divide-by-zero → `"N/A"`, a result over 10 digits → `"exceeded the max digits"`, equals with no pending operation is a no-op, repeated equals with no new input is idempotent, equals is a no-op while `isError` is true) in `src/domain/calculator.test.ts` (depends on T007)
 
 ### Implementation for User Story 1
 
 - [ ] T013 [US1] Implement `selectOperator()` in `src/domain/calculator.ts` to make its T012 tests pass (depends on T012)
 - [ ] T014 [US1] Implement `equals()` in `src/domain/calculator.ts` (compute, round/cap per research.md #2-#3, divide-by-zero → `N/A`) to make its T012 tests pass (depends on T012, T013)
-- [ ] T015 [US1] Wire the `+`/`-`/`×`/`÷` and `=` buttons in `Keypad.tsx` through `useCalculator.ts`'s dispatcher to `selectOperator()`/`equals()` (depends on T013, T014, T011)
+- [ ] T014a [US1] Write failing Vitest tests for `inputDigit()`'s error-recovery branch — typing a digit while `isError` is true clears the error and starts a fresh entry instead of appending to `"N/A"`/"exceeded the max digits" (data-model.md, FR-016) — then extend `inputDigit()` in `src/domain/calculator.ts` to satisfy them, in `src/domain/calculator.test.ts` (depends on T014 — needs `equals()` to exist so a real error state can be produced in the test)
+- [ ] T015 [US1] Wire the `+`/`-`/`×`/`÷` and `=` buttons in `Keypad.tsx` through `useCalculator.ts`'s dispatcher to `selectOperator()`/`equals()` (depends on T013, T014, T014a, T011)
 - [ ] T016 [P] [US1] Write an RTL test for click-driven basic calculations (`12+7=19`, `9-15=-6`, `6×7=42`, `20÷4=5`, `5÷0=N/A`) in `src/App.test.tsx` (depends on T015)
 
 **Checkpoint**: MVP complete — full four-operator arithmetic works end-to-end via on-screen buttons.
@@ -78,7 +79,7 @@ Single frontend project per plan.md's Structure Decision — `src/` at the repos
 
 ### Tests for User Story 2 (write first, confirm they fail)
 
-- [ ] T017 [US2] Write failing Vitest tests for `clearEntry()`, `clearAll()`, and `backspace()` — including backspace at `"0"` being a no-op and clear-entry preserving the pending operator/first operand — in `src/domain/calculator.test.ts` (depends on T014)
+- [ ] T017 [US2] Write failing Vitest tests for `clearEntry()`, `clearAll()`, and `backspace()` — including backspace at `"0"` being a no-op, clear-entry preserving the pending operator/first operand, and — per data-model.md's error-recovery rules — clear-entry, clear-all, and backspace each clearing `isError` back to `false` when invoked while `display` is `"N/A"`/"exceeded the max digits" — in `src/domain/calculator.test.ts` (depends on T014a)
 
 ### Implementation for User Story 2
 
@@ -139,6 +140,7 @@ Single frontend project per plan.md's Structure Decision — `src/` at the repos
 - [ ] T031 Verify visible keyboard focus indicators and ≥4.5:1 contrast across every button per quickstart.md step 7, adjusting `src/styles/tokens.css` if needed (depends on T027)
 - [ ] T032 Run the full quickstart.md manual validation checklist end-to-end and fix any discrepancies found (depends on T029, T030, T031)
 - [ ] T033 [P] Confirm `src/domain/` contains no `react`, `react-dom`, or DOM imports (constitution Principle II compliance check) (depends on T027)
+- [ ] T034 [P] Visual consistency sweep: confirm every button and the display use only `tokens.css` values for spacing/sizing/color/radius, with no one-off styles introduced across Phases 3-6 (FR-013), in `src/components/*.css` (depends on T027)
 
 ---
 
@@ -165,7 +167,7 @@ Single frontend project per plan.md's Structure Decision — `src/` at the repos
 - T003 and T004 (Setup) can run together.
 - T008 and T009 (Foundational) can run together.
 - Within Phase 3-6, each story's final RTL test task is marked `[P]` relative to other stories' file work, but note US4 cannot start until US1-3's wiring tasks are done (see above).
-- T029 and T033 (Polish) can run together.
+- T029, T033, and T034 (Polish) can run together.
 
 ---
 
@@ -193,7 +195,7 @@ Task: "Initialize CHANGELOG.md with an Unreleased section"
 
 1. Complete Phase 1: Setup (T001-T004)
 2. Complete Phase 2: Foundational (T005-T011) — blocks everything else
-3. Complete Phase 3: User Story 1 (T012-T016)
+3. Complete Phase 3: User Story 1 (T012-T016, including T014a)
 4. **STOP and VALIDATE**: run `npm run test`, then walk through quickstart.md step 1 by hand
 5. This is a working, demoable calculator for the four basic operators
 

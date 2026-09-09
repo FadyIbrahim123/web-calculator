@@ -28,15 +28,17 @@ The complete state of a single, in-progress or just-completed calculation. Lives
 
 Each user action (button click or equivalent keyboard key, per FR-007) maps to one pure transition function taking the current state and returning the next state. No transition ever throws or produces an unrepresentable state — every input, including the "odd" ones called out in spec Edge Cases, maps to a defined next state.
 
+Every row below states its effect on `isError` explicitly — this closes a gap found in `/speckit-analyze` (finding U1) where recovery from an error state (FR-016) was ambiguous for several actions.
+
 | Action | Effect |
 |---|---|
-| Digit (`0`-`9`, `.`) | Appended to `display` (respecting the 10-digit cap and single-decimal-point rule); if `awaitingSecondOperand` or `isError` is `true`, starts a fresh entry instead of appending. |
-| Operator (`+`, `-`, `×`, `÷`) | If no operator is pending, stores `display` into `previousOperand`, sets `operator`, sets `awaitingSecondOperand = true`. If an operator is already pending and a second operand has been entered, first resolves the pending calculation (same as Equals), then stores the new operator. If an operator is pending but no second operand was entered yet, simply replaces `operator`. |
-| Percent (`%`) | Converts `display` per the clarified rule: `value / 100` standalone, or `(previousOperand * value) / 100` when `operator` is pending — see spec Clarifications. |
-| Equals (`=` / `Enter`) | If an operator and second operand are present, computes the result, rounds/caps it per FR-017, writes it to `display`, and clears `previousOperand`/`operator`. If pressed with no pending operation, or repeatedly with no new input, is a no-op (spec Assumptions). |
-| Clear Entry (CE) | Resets `display` to `"0"` only; `previousOperand`, `operator`, and `awaitingSecondOperand` are untouched (FR-004). |
-| Clear All (C/AC) | Resets every field to its initial state (FR-005). |
-| Delete last digit (Backspace) | Removes the last character of `display`; if `display` is already `"0"` (or empty), it's a no-op, never producing a negative-length or invalid value (FR-006). |
+| Digit (`0`-`9`, `.`) | If `awaitingSecondOperand` or `isError` is `true`, starts a fresh entry (`display` becomes just the typed character, `isError` resets to `false`) instead of appending. Otherwise, appended to `display` (respecting the 10-digit cap and single-decimal-point rule). |
+| Operator (`+`, `-`, `×`, `÷`) | If `isError` is `true`, behaves as Clear All followed by treating `display` (reset to `"0"`) as the first operand with the new operator pending — i.e. the error is discarded, not carried into a new calculation. Otherwise: if no operator is pending, stores `display` into `previousOperand`, sets `operator`, sets `awaitingSecondOperand = true`. If an operator is already pending and a second operand has been entered, first resolves the pending calculation (same as Equals), then stores the new operator. If an operator is pending but no second operand was entered yet, simply replaces `operator`. |
+| Percent (`%`) | Converts `display` per the clarified rule: `value / 100` standalone, or `(previousOperand * value) / 100` when `operator` is pending — see spec Clarifications. No-op if `isError` is `true` (percent has no defined meaning applied to `N/A`). |
+| Equals (`=` / `Enter`) | If an operator and second operand are present, computes the result, rounds/caps it per FR-017, writes it to `display`, and clears `previousOperand`/`operator`. If pressed with no pending operation, or repeatedly with no new input, is a no-op (spec Assumptions). No-op if `isError` is `true`. |
+| Clear Entry (CE) | Resets `display` to `"0"` and `isError` to `false`; `previousOperand`, `operator`, and `awaitingSecondOperand` are untouched (FR-004, FR-016). |
+| Clear All (C/AC) | Resets every field, including `isError`, to its initial state (FR-005, FR-016). |
+| Delete last digit (Backspace) | If `isError` is `true`, behaves like Clear Entry (resets `display` to `"0"`, `isError` to `false`) rather than trying to remove a character from `"N/A"`/"exceeded the max digits". Otherwise removes the last character of `display`; if `display` is already `"0"` (or empty), it's a no-op, never producing a negative-length or invalid value (FR-006, FR-016). |
 
 ### Initial state
 
