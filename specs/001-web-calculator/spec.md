@@ -8,6 +8,13 @@
 
 **Input**: User description: "Build a web calculator. A user opens the page and can perform everyday arithmetic: addition, subtraction, multiplication, division, and percentages. They can clear the current entry, clear everything, and delete the last digit. They can use the on-screen buttons or their keyboard. It must not crash or show nonsense when the user does something odd. It must look considered and consistent, and it must work on a phone."
 
+## Clarifications
+
+- Q: When a percentage is applied as part of a pending operation (e.g., `200 + 10%`), should it be computed relative to the first operand, or should it just convert the current entry to a fraction regardless of context? → A: Relative to first operand — `200 + 10%` → adds `20` (10% of 200), giving `220`.
+- Q: What happens on divide by zero? → A: Display `N/A`.
+- Q: What is the maximum number of digits the display accepts, and what happens past it? → A: 10 digits; past that, show "exceeded the max digits".
+- Q: Which keyboard keys map to which operations, and does Enter mean equals? → A: `+`, `-`, `*`, `/` map to add/subtract/multiply/divide; `Enter` triggers equals, and the `=` key itself also works.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Perform a basic calculation (Priority: P1)
@@ -75,19 +82,20 @@ A user who prefers not to reach for the mouse/touchscreen performs an entire cal
 2. **Given** the user has typed a number, **When** they press `Backspace`, **Then** the last digit is removed, matching the delete-last-digit button.
 3. **Given** the user is mid-calculation, **When** they press `Escape`, **Then** the calculator clears everything, matching the clear-all button.
 4. **Given** the calculator has keyboard focus, **When** the user presses a key with no assigned function (e.g., a letter key), **Then** nothing happens and no error or crash occurs.
+5. **Given** the calculator has keyboard focus, **When** the user types `6`, `*`, `7`, and presses `=` (instead of `Enter`), **Then** the display shows `42`, confirming both `=` and `Enter` trigger equals and `*`/`/` map to multiply/divide.
 
 ---
 
 ### Edge Cases
 
-- Dividing by zero must not crash the app or show a raw error code; the calculator shows a clear, human-readable indication (e.g., "Error") and lets the user recover by clearing or starting a new entry.
+- Dividing by zero must not crash the app or show a raw error code; the calculator shows `N/A` and lets the user recover by clearing or starting a new entry.
 - Pressing an operator immediately after another operator replaces the pending operator rather than stacking or crashing (e.g., `5 + × 3 =` behaves as `5 × 3 =`).
 - Pressing `=` with no second operand entered does not crash and does not produce a nonsensical result (e.g., repeats the current value or is a no-op).
 - Pressing `=` repeatedly with no new input between presses does not change the result or crash.
 - Typing multiple decimal points in one number (e.g., `1.2.3`) is prevented or ignored after the first decimal point.
 - Leading zeros are normalized (e.g., typing `00007` behaves as `7`).
 - Pressing decimal point on an empty entry starts the number at `0.`.
-- Results or intermediate values that exceed the display's width are shown in a truncated or abbreviated form rather than breaking the layout or wrapping off-screen.
+- Numeric entry and results are capped at 10 digits; typing an 11th digit is ignored, and a result that would exceed 10 digits shows "exceeded the max digits" instead of overflowing or wrapping the layout.
 - Rapid or repeated button presses (mouse or keyboard) do not cause the display to freeze, duplicate digits unexpectedly, or crash the app.
 - Percent pressed on `0` or on an empty entry returns `0` rather than an error.
 - Very small screens (narrow phones) show all buttons without horizontal scrolling, overlap, or clipped text.
@@ -98,13 +106,13 @@ A user who prefers not to reach for the mouse/touchscreen performs an entire cal
 
 - **FR-001**: The calculator MUST let users enter multi-digit numbers, including decimals, via on-screen digit buttons.
 - **FR-002**: The calculator MUST perform addition, subtraction, multiplication, and division between two operands and display a correct result.
-- **FR-003**: The calculator MUST perform percentage conversion of the current entry, and MUST apply it correctly relative to a pending operation when one exists.
+- **FR-003**: The calculator MUST perform percentage conversion of the current entry; standalone, it converts the entry to a hundredth of its value, and when a pending operation exists, the percentage is computed relative to the first operand (e.g., `200 + 10%` adds `20`).
 - **FR-004**: The calculator MUST provide a clear-entry control that resets only the number currently being entered, without discarding a pending operator or the first operand.
 - **FR-005**: The calculator MUST provide a clear-all control that resets the entire calculation (display, pending operator, and stored operand) back to its initial state.
 - **FR-006**: The calculator MUST provide a delete-last-digit control that removes the most recently entered digit of the current entry, and is a no-op (not an error) when the entry is already empty/zero.
-- **FR-007**: Every action available via an on-screen button (digits, operators, percent, equals, clear-entry, clear-all, delete-last-digit) MUST also be triggerable from the keyboard.
+- **FR-007**: Every action available via an on-screen button (digits, operators, percent, equals, clear-entry, clear-all, delete-last-digit) MUST also be triggerable from the keyboard, using the following bindings: digit keys `0`-`9` for digits, `+`/`-`/`*`/`/` for add/subtract/multiply/divide, `%` for percent, both `Enter` and `=` for equals, `Backspace` for delete-last-digit, and `Escape` for clear-all.
 - **FR-008**: The calculator MUST display the current entry or result at all times, updating immediately as the user interacts with it.
-- **FR-009**: The calculator MUST handle division by zero, and any other invalid or undefined operation, by showing a clear, human-readable error state rather than crashing, freezing, or displaying a raw code, `NaN`, `undefined`, or `Infinity`.
+- **FR-009**: The calculator MUST handle division by zero, and any other invalid or undefined operation, by displaying `N/A` rather than crashing, freezing, or showing a raw code, `NaN`, `undefined`, or `Infinity`.
 - **FR-010**: The calculator MUST prevent or gracefully normalize malformed number entry, including multiple decimal points in a single number and redundant leading zeros.
 - **FR-011**: The calculator MUST ignore input that has no defined effect (e.g., unmapped keyboard keys, pressing equals with no pending operation) without crashing or corrupting the displayed state.
 - **FR-012**: The calculator's layout MUST remain fully usable, with no overlapping, clipped, or off-screen controls, on phone-sized screens as well as larger screens.
@@ -112,10 +120,11 @@ A user who prefers not to reach for the mouse/touchscreen performs an entire cal
 - **FR-014**: On-screen controls MUST be large enough to comfortably operate by touch on a phone screen.
 - **FR-015**: Interactive controls MUST show a visible focus indicator when navigated to via keyboard.
 - **FR-016**: Recovering from an error state (e.g., after divide-by-zero) MUST be possible by pressing clear-all, or by clear-entry/starting a new number entry, without reloading the page.
+- **FR-017**: The calculator MUST cap numeric entry and displayed results at 10 digits; further digit entry past the cap is ignored, and a result that would exceed 10 digits displays "exceeded the max digits" instead of overflowing or breaking the layout.
 
 ### Key Entities
 
-- **Calculation State**: Represents the in-progress or completed calculation the user is working on. Includes the value currently displayed, the first operand (when an operation is pending), the selected operator (add, subtract, multiply, divide, or none), and whether the calculator is in an error state. Exists only for the current session; not saved or shared.
+- **Calculation State**: Represents the in-progress or completed calculation the user is working on. Includes the value currently displayed, the first operand (when an operation is pending), the selected operator (add, subtract, multiply, divide, or none), and an error/status indicator (`N/A` for invalid operations like divide-by-zero, or "exceeded the max digits" for overflow). Exists only for the current session; not saved or shared.
 
 ## Success Criteria *(mandatory)*
 
@@ -130,7 +139,6 @@ A user who prefers not to reach for the mouse/touchscreen performs an entire cal
 
 ## Assumptions
 
-- Percentage behavior follows common calculator convention: pressed standalone, it converts the current entry to a hundredth of its value (e.g., `50` → `0.5`); pressed as part of a pending operation, it is computed relative to the first operand (e.g., `200 + 10% = 220`).
 - Pressing equals repeatedly with no new input in between is idempotent (no repeated re-application of the last operation) — this avoids ambiguity around "chained equals" behavior that wasn't specified.
 - No memory functions (M+, M-, MR, MC), calculation history, or persistence across page reloads are in scope; each session starts fresh from zero.
 - No advanced operations (square root, exponents, parentheses, trigonometry) are in scope — only addition, subtraction, multiplication, division, and percentage, as stated in the request.
