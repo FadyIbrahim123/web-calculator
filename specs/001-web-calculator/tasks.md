@@ -22,10 +22,10 @@ Single frontend project per plan.md's Structure Decision — `src/` at the repos
 
 **Purpose**: Get a running, testable Vite + React + TypeScript project on disk.
 
-- [ ] T001 Scaffold the Vite + React + TypeScript (strict) project: `index.html`, `vite.config.ts`, `tsconfig.json` (`"strict": true`), `package.json` (react, react-dom, vite deps), `src/main.tsx`, and a placeholder `src/App.tsx` that renders "Calculator"
-- [ ] T002 Add Vitest + React Testing Library: test config (in `vite.config.ts` or `vitest.config.ts`), a test setup file, and `dev`/`build`/`test` scripts in `package.json` (depends on T001)
-- [ ] T003 [P] Create the design-token stylesheet `src/styles/tokens.css` with color tokens (including a ≥4.5:1-contrast text/background pair and a visible focus-ring color), a spacing scale, border-radius, and a type scale (depends on T001)
-- [ ] T004 [P] Initialize `CHANGELOG.md` at the repo root with a Keep-a-Changelog-style "Unreleased" section (constitution Principle V) (depends on T001)
+- [X] T001 Scaffold the Vite + React + TypeScript (strict) project: `index.html`, `vite.config.ts`, `tsconfig.json` (`"strict": true`), `package.json` (react, react-dom, vite deps), `src/main.tsx`, and a placeholder `src/App.tsx` that renders "Calculator"
+- [X] T002 Add Vitest + React Testing Library: test config (in `vite.config.ts` or `vitest.config.ts`), a test setup file, and `dev`/`build`/`test` scripts in `package.json` (depends on T001)
+- [X] T003 [P] Create the design-token stylesheet `src/styles/tokens.css` with color tokens (including a ≥4.5:1-contrast text/background pair and a visible focus-ring color), a spacing scale, border-radius, and a type scale (depends on T001)
+- [X] T004 [P] Initialize `CHANGELOG.md` at the repo root with a Keep-a-Changelog-style "Unreleased" section (constitution Principle V) (depends on T001)
 
 **Checkpoint**: `npm run dev` and `npm run test` both run cleanly against an empty app.
 
@@ -37,13 +37,13 @@ Single frontend project per plan.md's Structure Decision — `src/` at the repos
 
 **CRITICAL**: No user story task may begin until this phase is complete.
 
-- [ ] T005 Define `CalculatorState`, `Operator`, and the `INITIAL_STATE` constant in `src/domain/calculator.types.ts`, matching data-model.md's Calculation State entity (depends on T001)
-- [ ] T006 Write failing Vitest tests for digit entry and number normalization — appending a digit, allowing only one decimal point, normalizing leading zeros, and enforcing the 10-digit entry cap (FR-010, FR-017) — in `src/domain/calculator.test.ts` (depends on T005)
-- [ ] T007 Implement `inputDigit()` in `src/domain/calculator.ts` to make the T006 tests pass (depends on T006)
-- [ ] T008 [P] Build the `CalcButton` primitive: `src/components/CalcButton.tsx` + `CalcButton.css`, consuming `tokens.css` for spacing/focus-ring, with a minimum 44x44px touch target (FR-014, constitution Principle IV) (depends on T003)
-- [ ] T009 [P] Build the `Display` component: `src/components/Display.tsx` + `Display.css`, rendering `state.display` including the literal strings `"N/A"` and `"exceeded the max digits"` (depends on T003)
-- [ ] T010 Build the `Keypad` component: `src/components/Keypad.tsx` + `Keypad.css` — the full responsive button grid (digits `0`-`9`, `.`, `+`, `-`, `×`, `÷`, `%`, `=`, CE, C, and delete-last-digit), each button wired to a passed-in dispatch callback (no-op stub for now), laid out with no overlap/clipping from 320px up (FR-012) (depends on T008)
-- [ ] T011 Build `useCalculator` in `src/hooks/useCalculator.ts` (wraps `INITIAL_STATE` in `useState`, exposes `state` and an `inputDigit` dispatcher calling T007's function) and wire `src/App.tsx` to render `Display` + `Keypad` (depends on T007, T009, T010)
+- [X] T005 Define `CalculatorState`, `Operator`, and the `INITIAL_STATE` constant in `src/domain/calculator.types.ts`, matching data-model.md's Calculation State entity (depends on T001)
+- [X] T006 Write failing Vitest tests for digit entry and number normalization — appending a digit, allowing only one decimal point, normalizing leading zeros, and enforcing the 10-digit entry cap (FR-010, FR-017) — in `src/domain/calculator.test.ts` (depends on T005)
+- [X] T007 Implement `inputDigit()` in `src/domain/calculator.ts` to make the T006 tests pass (depends on T006)
+- [X] T008 [P] Build the `CalcButton` primitive: `src/components/CalcButton.tsx` + `CalcButton.css`, consuming `tokens.css` for spacing/focus-ring, with a minimum 44x44px touch target (FR-014, constitution Principle IV) (depends on T003)
+- [X] T009 [P] Build the `Display` component: `src/components/Display.tsx` + `Display.css`, rendering `state.display` including the literal strings `"N/A"` and `"exceeded the max digits"` (depends on T003)
+- [X] T010 Build the `Keypad` component: `src/components/Keypad.tsx` + `Keypad.css` — the full responsive button grid (digits `0`-`9`, `.`, `+`, `-`, `×`, `÷`, `%`, `=`, CE, C, and delete-last-digit), each button wired to a passed-in dispatch callback (no-op stub for now), laid out with no overlap/clipping from 320px up (FR-012) (depends on T008)
+- [X] T011 Build `useCalculator` in `src/hooks/useCalculator.ts` (wraps `INITIAL_STATE` in `useState`, exposes `state` and an `inputDigit` dispatcher calling T007's function) and wire `src/App.tsx` to render `Display` + `Keypad` (depends on T007, T009, T010)
 
 **Checkpoint**: The app runs and shows the full calculator layout responsively; digit buttons update the display; operator/clear/percent buttons are visible but not yet functional.
 
@@ -57,15 +57,15 @@ Single frontend project per plan.md's Structure Decision — `src/` at the repos
 
 ### Tests for User Story 1 (write first, confirm they fail)
 
-- [ ] T012 [US1] Write failing Vitest tests for `selectOperator()` (add/subtract/multiply/divide, replacing an already-pending operator, and — per data-model.md's error-recovery rules — pressing an operator while `isError` is true discards the error and starts a fresh calculation) and `equals()` (correct results for all four operators, divide-by-zero → `"N/A"`, a result over 10 digits → `"exceeded the max digits"`, equals with no pending operation is a no-op, repeated equals with no new input is idempotent, equals is a no-op while `isError` is true) in `src/domain/calculator.test.ts` (depends on T007)
+- [X] T012 [US1] Write failing Vitest tests for `selectOperator()` (add/subtract/multiply/divide, replacing an already-pending operator, and — per data-model.md's error-recovery rules — pressing an operator while `isError` is true discards the error and starts a fresh calculation) and `equals()` (correct results for all four operators, divide-by-zero → `"N/A"`, a result over 10 digits → `"exceeded the max digits"`, equals with no pending operation is a no-op, repeated equals with no new input is idempotent, equals is a no-op while `isError` is true) in `src/domain/calculator.test.ts` (depends on T007)
 
 ### Implementation for User Story 1
 
-- [ ] T013 [US1] Implement `selectOperator()` in `src/domain/calculator.ts` to make its T012 tests pass (depends on T012)
-- [ ] T014 [US1] Implement `equals()` in `src/domain/calculator.ts` (compute, round/cap per research.md #2-#3, divide-by-zero → `N/A`) to make its T012 tests pass (depends on T012, T013)
-- [ ] T014a [US1] Write failing Vitest tests for `inputDigit()`'s error-recovery branch — typing a digit while `isError` is true clears the error and starts a fresh entry instead of appending to `"N/A"`/"exceeded the max digits" (data-model.md, FR-016) — then extend `inputDigit()` in `src/domain/calculator.ts` to satisfy them, in `src/domain/calculator.test.ts` (depends on T014 — needs `equals()` to exist so a real error state can be produced in the test)
-- [ ] T015 [US1] Wire the `+`/`-`/`×`/`÷` and `=` buttons in `Keypad.tsx` through `useCalculator.ts`'s dispatcher to `selectOperator()`/`equals()` (depends on T013, T014, T014a, T011)
-- [ ] T016 [P] [US1] Write an RTL test for click-driven basic calculations (`12+7=19`, `9-15=-6`, `6×7=42`, `20÷4=5`, `5÷0=N/A`) in `src/App.test.tsx` (depends on T015)
+- [X] T013 [US1] Implement `selectOperator()` in `src/domain/calculator.ts` to make its T012 tests pass (depends on T012)
+- [X] T014 [US1] Implement `equals()` in `src/domain/calculator.ts` (compute, round/cap per research.md #2-#3, divide-by-zero → `N/A`) to make its T012 tests pass (depends on T012, T013)
+- [X] T014a [US1] Write failing Vitest tests for `inputDigit()`'s error-recovery branch — typing a digit while `isError` is true clears the error and starts a fresh entry instead of appending to `"N/A"`/"exceeded the max digits" (data-model.md, FR-016) — then extend `inputDigit()` in `src/domain/calculator.ts` to satisfy them, in `src/domain/calculator.test.ts` (depends on T014 — needs `equals()` to exist so a real error state can be produced in the test)
+- [X] T015 [US1] Wire the `+`/`-`/`×`/`÷` and `=` buttons in `Keypad.tsx` through `useCalculator.ts`'s dispatcher to `selectOperator()`/`equals()` (depends on T013, T014, T014a, T011)
+- [X] T016 [P] [US1] Write an RTL test for click-driven basic calculations (`12+7=19`, `9-15=-6`, `6×7=42`, `20÷4=5`, `5÷0=N/A`) in `src/App.test.tsx` (depends on T015)
 
 **Checkpoint**: MVP complete — full four-operator arithmetic works end-to-end via on-screen buttons.
 
@@ -79,13 +79,13 @@ Single frontend project per plan.md's Structure Decision — `src/` at the repos
 
 ### Tests for User Story 2 (write first, confirm they fail)
 
-- [ ] T017 [US2] Write failing Vitest tests for `clearEntry()`, `clearAll()`, and `backspace()` — including backspace at `"0"` being a no-op, clear-entry preserving the pending operator/first operand, and — per data-model.md's error-recovery rules — clear-entry, clear-all, and backspace each clearing `isError` back to `false` when invoked while `display` is `"N/A"`/"exceeded the max digits" — in `src/domain/calculator.test.ts` (depends on T014a)
+- [X] T017 [US2] Write failing Vitest tests for `clearEntry()`, `clearAll()`, and `backspace()` — including backspace at `"0"` being a no-op, clear-entry preserving the pending operator/first operand, and — per data-model.md's error-recovery rules — clear-entry, clear-all, and backspace each clearing `isError` back to `false` when invoked while `display` is `"N/A"`/"exceeded the max digits" — in `src/domain/calculator.test.ts` (depends on T014a)
 
 ### Implementation for User Story 2
 
-- [ ] T018 [US2] Implement `clearEntry()`, `clearAll()`, and `backspace()` in `src/domain/calculator.ts` to make the T017 tests pass (depends on T017)
-- [ ] T019 [US2] Wire the CE / C / delete-last-digit buttons in `Keypad.tsx` through `useCalculator.ts` (depends on T018, T015)
-- [ ] T020 [P] [US2] Write an RTL test for clear-entry/clear-all/delete-last-digit flows matching spec.md's User Story 2 acceptance scenarios in `src/App.test.tsx` (depends on T019)
+- [X] T018 [US2] Implement `clearEntry()`, `clearAll()`, and `backspace()` in `src/domain/calculator.ts` to make the T017 tests pass (depends on T017)
+- [X] T019 [US2] Wire the CE / C / delete-last-digit buttons in `Keypad.tsx` through `useCalculator.ts` (depends on T018, T015)
+- [X] T020 [P] [US2] Write an RTL test for clear-entry/clear-all/delete-last-digit flows matching spec.md's User Story 2 acceptance scenarios in `src/App.test.tsx` (depends on T019)
 
 **Checkpoint**: Users can now recover from mistakes without restarting a calculation.
 
@@ -99,13 +99,13 @@ Single frontend project per plan.md's Structure Decision — `src/` at the repos
 
 ### Tests for User Story 3 (write first, confirm they fail)
 
-- [ ] T021 [US3] Write failing Vitest tests for `percent()` — standalone (`value / 100`) and with a pending operator (relative to the first operand, e.g. `200 + 10%` → `20`), per spec.md's Clarifications — in `src/domain/calculator.test.ts` (depends on T014)
+- [X] T021 [US3] Write failing Vitest tests for `percent()` — standalone (`value / 100`) and with a pending operator (relative to the first operand, e.g. `200 + 10%` → `20`), per spec.md's Clarifications — in `src/domain/calculator.test.ts` (depends on T014)
 
 ### Implementation for User Story 3
 
-- [ ] T022 [US3] Implement `percent()` in `src/domain/calculator.ts` to make the T021 tests pass (depends on T021)
-- [ ] T023 [US3] Wire the `%` button in `Keypad.tsx` through `useCalculator.ts` (depends on T022, T015)
-- [ ] T024 [P] [US3] Write an RTL test for percentage flows (standalone and chained) matching spec.md's User Story 3 acceptance scenarios in `src/App.test.tsx` (depends on T023)
+- [X] T022 [US3] Implement `percent()` in `src/domain/calculator.ts` to make the T021 tests pass (depends on T021)
+- [X] T023 [US3] Wire the `%` button in `Keypad.tsx` through `useCalculator.ts` (depends on T022, T015)
+- [X] T024 [P] [US3] Write an RTL test for percentage flows (standalone and chained) matching spec.md's User Story 3 acceptance scenarios in `src/App.test.tsx` (depends on T023)
 
 **Checkpoint**: All everyday-arithmetic operations named in the spec are functional via on-screen buttons.
 
@@ -119,13 +119,13 @@ Single frontend project per plan.md's Structure Decision — `src/` at the repos
 
 ### Tests for User Story 4 (write first, confirm they fail)
 
-- [ ] T025 [US4] Write failing Vitest tests for `mapKeyToAction()` covering every binding (`0`-`9`, `.`, `+`, `-`, `*`, `/`, `Enter`, `=`, `Backspace`, `Escape`, `%`) and confirming an unmapped key (e.g., a letter) maps to no action, in `src/domain/keymap.test.ts` (depends on T005)
+- [X] T025 [US4] Write failing Vitest tests for `mapKeyToAction()` covering every binding (`0`-`9`, `.`, `+`, `-`, `*`, `/`, `Enter`, `=`, `Backspace`, `Escape`, `%`) and confirming an unmapped key (e.g., a letter) maps to no action, in `src/domain/keymap.test.ts` (depends on T005)
 
 ### Implementation for User Story 4
 
-- [ ] T026 [US4] Implement `mapKeyToAction()` in `src/domain/keymap.ts` to make the T025 tests pass (depends on T025)
-- [ ] T027 [US4] Attach a root-level `keydown` listener in `useCalculator.ts` (via `useEffect`) that uses `mapKeyToAction()` to dispatch the same actions the buttons use (depends on T026, T015, T019, T023 — every action it can dispatch must already exist)
-- [ ] T028 [P] [US4] Write an RTL test simulating a full keyboard-only flow (type + `Enter`, `Backspace`, `Escape`, `*`/`/` keys, `=` key, an unmapped key doing nothing) matching spec.md's User Story 4 acceptance scenarios in `src/App.test.tsx` (depends on T027)
+- [X] T026 [US4] Implement `mapKeyToAction()` in `src/domain/keymap.ts` to make the T025 tests pass (depends on T025)
+- [X] T027 [US4] Attach a root-level `keydown` listener in `useCalculator.ts` (via `useEffect`) that uses `mapKeyToAction()` to dispatch the same actions the buttons use (depends on T026, T015, T019, T023 — every action it can dispatch must already exist)
+- [X] T028 [P] [US4] Write an RTL test simulating a full keyboard-only flow (type + `Enter`, `Backspace`, `Escape`, `*`/`/` keys, `=` key, an unmapped key doing nothing) matching spec.md's User Story 4 acceptance scenarios in `src/App.test.tsx` (depends on T027)
 
 **Checkpoint**: All four user stories are independently functional; button and keyboard paths produce identical results.
 
@@ -135,12 +135,12 @@ Single frontend project per plan.md's Structure Decision — `src/` at the repos
 
 **Purpose**: Confirm the constitution's quality bars and spec's success criteria are actually met.
 
-- [ ] T029 [P] Add a dated `CHANGELOG.md` entry describing the initial calculator release (constitution Principle V) (depends on T027)
-- [ ] T030 Verify and, if needed, adjust the responsive layout at 320px-375px widths per quickstart.md step 6, in `src/components/*.css` (depends on T027)
-- [ ] T031 Verify visible keyboard focus indicators and ≥4.5:1 contrast across every button per quickstart.md step 7, adjusting `src/styles/tokens.css` if needed (depends on T027)
-- [ ] T032 Run the full quickstart.md manual validation checklist end-to-end and fix any discrepancies found (depends on T029, T030, T031)
-- [ ] T033 [P] Confirm `src/domain/` contains no `react`, `react-dom`, or DOM imports (constitution Principle II compliance check) (depends on T027)
-- [ ] T034 [P] Visual consistency sweep: confirm every button and the display use only `tokens.css` values for spacing/sizing/color/radius, with no one-off styles introduced across Phases 3-6 (FR-013), in `src/components/*.css` (depends on T027)
+- [X] T029 [P] Add a dated `CHANGELOG.md` entry describing the initial calculator release (constitution Principle V) (depends on T027)
+- [X] T030 Verify and, if needed, adjust the responsive layout at 320px-375px widths per quickstart.md step 6, in `src/components/*.css` (depends on T027)
+- [X] T031 Verify visible keyboard focus indicators and ≥4.5:1 contrast across every button per quickstart.md step 7, adjusting `src/styles/tokens.css` if needed (depends on T027)
+- [X] T032 Run the full quickstart.md manual validation checklist end-to-end and fix any discrepancies found (depends on T029, T030, T031)
+- [X] T033 [P] Confirm `src/domain/` contains no `react`, `react-dom`, or DOM imports (constitution Principle II compliance check) (depends on T027)
+- [X] T034 [P] Visual consistency sweep: confirm every button and the display use only `tokens.css` values for spacing/sizing/color/radius, with no one-off styles introduced across Phases 3-6 (FR-013), in `src/components/*.css` (depends on T027)
 
 ---
 
