@@ -1,10 +1,22 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import App from "./App";
 
 function display() {
   return screen.getByRole("status", { name: "Calculator display" });
+}
+
+async function openHistory(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole("button", { name: "Show history" }));
+  return screen.getByRole("region", { name: "Calculation history" });
+}
+
+async function compute(
+  user: ReturnType<typeof userEvent.setup>,
+  keys: string,
+) {
+  await user.keyboard(keys);
 }
 
 describe("App — basic calculation (User Story 1)", () => {
@@ -193,5 +205,221 @@ describe("App — keyboard operation (User Story 4)", () => {
     await user.keyboard("5q");
 
     expect(display()).toHaveTextContent("5");
+  });
+});
+
+describe("App — history: review recent calculations (History US1)", () => {
+  it("shows an empty state on fresh load", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const region = await openHistory(user);
+
+    expect(region).toHaveTextContent("No calculations yet.");
+  });
+
+  it("adds an entry after a completed calculation", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await compute(user, "12+7=");
+    const region = await openHistory(user);
+
+    expect(
+      within(region).getByRole("button", { name: "12 + 7 = 19" }),
+    ).toBeInTheDocument();
+  });
+
+  it("lists a second calculation above the first (most-recent-first)", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await compute(user, "12+7=");
+    // Clear-all before starting the next, unrelated calculation — round 1's
+    // engine does not itself start a fresh entry on the next digit typed
+    // right after a result (see the spawned follow-up task), so a real user
+    // chaining independent calculations would clear first.
+    await compute(user, "{Escape}6*7=");
+    const region = await openHistory(user);
+
+    const rows = within(region).getAllByRole("listitem");
+    expect(rows[0]).toHaveTextContent("6 × 7 = 42");
+    expect(rows[1]).toHaveTextContent("12 + 7 = 19");
+  });
+
+  it("keeps only the 5 most recent entries, dropping the oldest", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await compute(user, "1+1=");
+    await compute(user, "{Escape}2+2=");
+    await compute(user, "{Escape}3+3=");
+    await compute(user, "{Escape}4+4=");
+    await compute(user, "{Escape}5+5=");
+    await compute(user, "{Escape}6+6=");
+    const region = await openHistory(user);
+
+    const rows = within(region).getAllByRole("listitem");
+    expect(rows).toHaveLength(5);
+    expect(region).not.toHaveTextContent("1 + 1 = 2");
+    expect(
+      within(region).getByRole("button", { name: "6 + 6 = 12" }),
+    ).toBeInTheDocument();
+  });
+
+  it("never adds an entry for a calculation that ends in an error", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await compute(user, "5/0=");
+    expect(display()).toHaveTextContent("N/A");
+
+    const region = await openHistory(user);
+    expect(region).toHaveTextContent("No calculations yet.");
+  });
+
+  it("always starts with an empty history on a fresh instance (FR-009/SC-006)", async () => {
+    const user = userEvent.setup();
+    const { unmount } = render(<App />);
+
+    await compute(user, "12+7=");
+    const populated = await openHistory(user);
+    expect(
+      within(populated).getByRole("button", { name: "12 + 7 = 19" }),
+    ).toBeInTheDocument();
+    unmount();
+
+    // No persistence code exists anywhere in this feature (FR-009), so a
+    // fresh instance — the closest jsdom proxy for "the page was reloaded"
+    // — must never see the previous instance's entries.
+    const freshUser = userEvent.setup();
+    render(<App />);
+    const region = await openHistory(freshUser);
+    expect(region).toHaveTextContent("No calculations yet.");
+  });
+});
+
+describe("App — history: reuse a past calculation (History US2)", () => {
+  it("sets the display to a selected entry's result", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await compute(user, "12+7=");
+    const region = await openHistory(user);
+    await user.click(within(region).getByRole("button", { name: "12 + 7 = 19" }));
+
+    expect(display()).toHaveTextContent("19");
+  });
+
+  it("discards an in-progress calculation when a history entry is selected", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await compute(user, "12+7=");
+    await compute(user, "{Escape}45+");
+    expect(display()).toHaveTextContent("45");
+
+    const region = await openHistory(user);
+    await user.click(within(region).getByRole("button", { name: "12 + 7 = 19" }));
+
+    expect(display()).toHaveTextContent("19");
+  });
+
+  it("lets the user continue calculating from a reused result, and records the new result", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await compute(user, "12+7=");
+    const region = await openHistory(user);
+    await user.click(within(region).getByRole("button", { name: "12 + 7 = 19" }));
+    // Selecting an entry closes the panel (region unmounts); continue on
+    // the calculator, then reopen history to check the new entry.
+    await compute(user, "+3=");
+
+    expect(display()).toHaveTextContent("22");
+    const updatedRegion = await openHistory(user);
+    expect(
+      within(updatedRegion).getByRole("button", { name: "19 + 3 = 22" }),
+    ).toBeInTheDocument();
+  });
+
+  it("closes the history panel after selecting an entry", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await compute(user, "12+7=");
+    const region = await openHistory(user);
+    await user.click(within(region).getByRole("button", { name: "12 + 7 = 19" }));
+
+    expect(screen.queryByRole("region", { name: "Calculation history" })).not.toBeInTheDocument();
+  });
+
+  it("does not remove or reorder the history list when an entry is selected", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await compute(user, "12+7=");
+    await compute(user, "{Escape}6*7=");
+    const region = await openHistory(user);
+    await user.click(within(region).getByRole("button", { name: "12 + 7 = 19" }));
+
+    // Selecting closes the panel; reopen it to inspect the list afterward.
+    const reopened = await openHistory(user);
+    const rows = within(reopened).getAllByRole("listitem");
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toHaveTextContent("6 × 7 = 42");
+    expect(rows[1]).toHaveTextContent("12 + 7 = 19");
+  });
+});
+
+describe("App — history: clear the list (History US3)", () => {
+  it("shows the empty state immediately after clearing a populated list", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await compute(user, "12+7=");
+    const region = await openHistory(user);
+    await user.click(within(region).getByRole("button", { name: "Clear history" }));
+
+    expect(region).toHaveTextContent("No calculations yet.");
+  });
+
+  it("shows a calculation completed right after clearing as the sole entry", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await compute(user, "12+7=");
+    const region = await openHistory(user);
+    await user.click(within(region).getByRole("button", { name: "Clear history" }));
+
+    await compute(user, "{Escape}6*7=");
+    expect(within(region).getAllByRole("listitem")).toHaveLength(1);
+    expect(
+      within(region).getByRole("button", { name: "6 × 7 = 42" }),
+    ).toBeInTheDocument();
+  });
+
+  it("is a no-op when the list is already empty", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const region = await openHistory(user);
+    await user.click(within(region).getByRole("button", { name: "Clear history" }));
+
+    expect(region).toHaveTextContent("No calculations yet.");
+  });
+
+  it("leaves the active calculation untouched when history is cleared", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await compute(user, "12+7=");
+    await compute(user, "{Escape}45+");
+    expect(display()).toHaveTextContent("45");
+
+    const region = await openHistory(user);
+    await user.click(within(region).getByRole("button", { name: "Clear history" }));
+
+    expect(display()).toHaveTextContent("45");
   });
 });
