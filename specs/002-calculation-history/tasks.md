@@ -38,7 +38,7 @@ Single frontend project per plan.md's Structure Decision — `src/` at the repos
 
 - [ ] T002 Define `HistoryEntry` (`{ id: string; firstOperand: number; operator: Operator; secondOperand: number; result: string }`) and `MAX_HISTORY_ENTRIES = 5` in **New file:** `src/domain/history.types.ts`, matching data-model.md's History Entry entity (imports `Operator` from `./calculator.types` — read-only, does not modify that file) (depends on T001)
 - [ ] T003 [P] Build the `HistoryToggle` component — a native `<button>` with `aria-expanded={isOpen}` and an accessible name that reflects state (e.g. "Show history" / "Hide history"), taking `isOpen: boolean` and `onToggle: () => void` props, styled from existing `styles/tokens.css` values only — **New files:** `src/components/HistoryToggle.tsx`, `src/components/HistoryToggle.css` (depends on T001)
-- [ ] T004 [P] Build the `HistoryPanel` shell — takes `entries: HistoryEntry[]`, `isOpen: boolean`, `onSelect: (entry: HistoryEntry) => void`, `onClear: () => void` props; conditionally rendered only when `isOpen` (so it is never in the accessibility tree or the keypad's layout flow when closed) as a `position: fixed` overlay that never participates in the keypad's flex/grid layout (research.md #5); renders an empty-state message (e.g. "No calculations yet.") when `entries` is empty, and a "Clear history" button wired to `onClear`; entry rendering itself is stubbed for now (real rows land in T012) — **New files:** `src/components/HistoryPanel.tsx`, `src/components/HistoryPanel.css`. Also **Modifies:** `src/components/Keypad.tsx` — add `export` to the existing `OPERATOR_LABELS` map so `HistoryPanel` can reuse the same `+ − × ÷` symbols instead of duplicating them (depends on T002)
+- [ ] T004 [P] Build the `HistoryPanel` shell — takes `entries: HistoryEntry[]`, `isOpen: boolean`, `onSelect: (entry: HistoryEntry) => void`, `onClear: () => void` props; conditionally rendered only when `isOpen` (so it is never in the accessibility tree or the keypad's layout flow when closed) as a `position: fixed` overlay that never participates in the keypad's flex/grid layout (research.md #5); renders an empty-state message (e.g. "No calculations yet.") when `entries` is empty, and a "Clear history" button wired to `onClear` (safe to call anytime — `clearHistory()`, added in T022, is unconditional and idempotent, so no extra empty-list guard is needed here or later); entry rendering itself is stubbed for now (real rows land in T012) — **New files:** `src/components/HistoryPanel.tsx`, `src/components/HistoryPanel.css`. Also **Modifies:** `src/components/Keypad.tsx` — add `export` to the existing `OPERATOR_LABELS` map so `HistoryPanel` can reuse the same `+ − × ÷` symbols instead of duplicating them (depends on T002)
 - [ ] T005 [P] Build the `useHistory` hook — `useState<HistoryEntry[]>([])` for `entries`, `useState(false)` for `isOpen`, exposes `{ entries, isOpen, toggle }` for now (`addFromCalculation`/`reuse`/`clear` are added by their respective stories below, T010/T017/T023) — **New file:** `src/hooks/useHistory.ts` (depends on T002)
 - [ ] T006 Wire `App.tsx` to render `HistoryToggle` and `HistoryPanel` using `useHistory()`'s `entries` (always `[]` for now), `isOpen`, and `toggle`, alongside the existing, still-untouched `useCalculator()` wiring — **Modifies:** `src/App.tsx` (depends on T003, T004, T005)
 
@@ -63,7 +63,7 @@ Single frontend project per plan.md's Structure Decision — `src/` at the repos
 - [ ] T010 [US1] Extend `useHistory` with `addFromCalculation(entry)`: generate an `id` from a `useRef` incrementing counter, build a `HistoryEntry`, and call `recordEntry()` (T008) to update `entries` state — **Modifies:** `src/hooks/useHistory.ts` (depends on T008, T005)
 - [ ] T011 [US1] Wire `App.tsx`: pass `useHistory().addFromCalculation` as `useCalculator`'s new `onEqualsComplete`, and pass live `entries` (instead of the always-`[]` placeholder from T006) into `HistoryPanel` — **Modifies:** `src/App.tsx` (depends on T009, T010)
 - [ ] T012 [P] [US1] Render real entry rows in `HistoryPanel`: each entry as `{firstOperand} {OPERATOR_LABELS[operator]} {secondOperand} = {result}` (using the export added in T004), most-recent-first per the array order `entries` already has — **Modifies:** `src/components/HistoryPanel.tsx` (depends on T002, T004; independent of T009/T010/T011 — different file)
-- [ ] T013 [US1] Write RTL tests for History User Story 1 in a new `describe("App — history: review recent calculations (History US1)")` block: empty state on fresh load; an entry appears after `12 + 7 =`; a second calculation (`6 × 7 =`) appears above the first; after 6 calculations only the 5 most recent show and the 1st is gone; a `5 ÷ 0 =` (`N/A`) calculation never appears — **Modifies:** `src/App.test.tsx` (existing describe blocks from round 1 are untouched) (depends on T011, T012)
+- [ ] T013 [US1] Write RTL tests for History User Story 1 in a new `describe("App — history: review recent calculations (History US1)")` block: empty state on fresh load; an entry appears after `12 + 7 =`; a second calculation (`6 × 7 =`) appears above the first; after 6 calculations only the 5 most recent show and the 1st is gone; a `5 ÷ 0 =` (`N/A`) calculation never appears; and — since no persistence code exists anywhere in this feature, `render`ing a fresh `<App/>` after populating and unmounting a prior instance always starts with an empty history list, as the only automated proxy available in jsdom for FR-009/SC-006 ("history resets on reload, is never persisted") — **Modifies:** `src/App.test.tsx` (existing describe blocks from round 1 are untouched) (depends on T011, T012)
 
 **Checkpoint**: User Story 1 is fully functional and independently testable — history can be viewed end-to-end.
 
@@ -106,9 +106,8 @@ Single frontend project per plan.md's Structure Decision — `src/` at the repos
 
 - [ ] T022 [US3] Implement `clearHistory()` to satisfy T021 — **Modifies:** `src/domain/history.ts` (depends on T021)
 - [ ] T023 [US3] Extend `useHistory` with `clear()`, setting `entries` to `clearHistory()`'s result — **Modifies:** `src/hooks/useHistory.ts` (depends on T022, T017)
-- [ ] T024 [P] [US3] Confirm the "Clear history" button built in T004 is wired to the `onClear` prop (it already is, from T004) and remains a no-op-safe action on an already-empty list (`clearHistory()` is already idempotent — `[] → []`) — **Modifies:** `src/components/HistoryPanel.tsx` only if any adjustment is needed; otherwise this task is a verification pass with no diff (depends on T004; independent of T021-T023 — different file)
-- [ ] T025 [US3] Wire `App.tsx`: `HistoryPanel`'s `onClear` calls `history.clear()`; confirm by inspection that no code path connects this to `calculator`'s state, so clearing history can never affect the active display/pending operator (FR-006) — **Modifies:** `src/App.tsx` (depends on T023, T024)
-- [ ] T026 [US3] Write RTL tests for History User Story 3 in a new `describe("App — history: clear the list (History US3)")` block: clearing populated history shows the empty state; a calculation completed right after appears as the sole entry; clearing an already-empty list is a no-op; clearing history while `45 +` is typed but not yet computed leaves the active display (`45`) untouched — **Modifies:** `src/App.test.tsx` (depends on T025)
+- [ ] T024 [US3] Wire `App.tsx`: `HistoryPanel`'s `onClear` calls `history.clear()`; confirm by inspection that no code path connects this to `calculator`'s state, so clearing history can never affect the active display/pending operator (FR-006) — **Modifies:** `src/App.tsx` (depends on T023; the button itself and its `onClear` prop already exist from T004, so this task's only remaining work is wiring the real `history.clear` function in)
+- [ ] T025 [US3] Write RTL tests for History User Story 3 in a new `describe("App — history: clear the list (History US3)")` block: clearing populated history shows the empty state; a calculation completed right after appears as the sole entry; clearing an already-empty list is a no-op; clearing history while `45 +` is typed but not yet computed leaves the active display (`45`) untouched — **Modifies:** `src/App.test.tsx` (depends on T024)
 
 **Checkpoint**: All three history user stories are independently functional; combined with round 1, the calculator now supports view/reuse/clear of a 5-entry session history.
 
@@ -118,12 +117,12 @@ Single frontend project per plan.md's Structure Decision — `src/` at the repos
 
 **Purpose**: Confirm the constitution's quality bars, the engine-purity guarantee, and spec.md's success criteria are actually met.
 
-- [ ] T027 [P] Add a dated `CHANGELOG.md` entry for calculation history (view/reuse/clear, 5-entry cap, session-only) — **Modifies:** `CHANGELOG.md` (constitution Principle V) (depends on T026)
-- [ ] T028 Verify the history overlay/drawer never resizes, reflows, or repositions the keypad at 320-375px, per quickstart.md step 5 — **Modifies:** `src/components/HistoryPanel.css` and/or `src/components/HistoryToggle.css` only if adjustments are found necessary (FR-008) (depends on T026)
-- [ ] T029 Verify the history toggle and entry-row buttons show visible keyboard focus indicators and meet ≥4.5:1 contrast, using only existing `styles/tokens.css` values (no new tokens introduced) — **Modifies:** `src/components/HistoryToggle.css` / `src/components/HistoryPanel.css` only if adjustments are found necessary (constitution Principle IV) (depends on T026)
-- [ ] T030 [P] Confirm `src/domain/calculator.ts`, `src/domain/calculator.types.ts`, and `src/domain/keymap.ts` are byte-for-byte identical to round 1 (e.g. `git diff 001-web-calculator -- src/domain/calculator.ts src/domain/calculator.types.ts src/domain/keymap.ts` shows no output) — the concrete, checkable form of plan.md's Constitution Check. **No files modified** by this task — it is a verification gate; if it fails, the correct fix is to move the offending logic into `history.ts`/`useCalculator.ts`'s additive callback, not to accept the diff (depends on T026)
-- [ ] T031 [P] Confirm `src/domain/history.ts` and `src/domain/history.types.ts` contain no `react`, `react-dom`, or DOM imports (Principle II applied to the new pure module too). **No files modified** by this task — verification only (depends on T026)
-- [ ] T032 Run the full quickstart.md manual validation checklist end-to-end — including step 1's round-1-regression pass — and fix any discrepancies found (depends on T027, T028, T029, T030, T031)
+- [ ] T026 [P] Add a dated `CHANGELOG.md` entry for calculation history (view/reuse/clear, 5-entry cap, session-only) — **Modifies:** `CHANGELOG.md` (constitution Principle V) (depends on T025)
+- [ ] T027 Verify the history overlay/drawer never resizes, reflows, or repositions the keypad at 320-375px, per quickstart.md step 5 — **Modifies:** `src/components/HistoryPanel.css` and/or `src/components/HistoryToggle.css` only if adjustments are found necessary (FR-008) (depends on T025)
+- [ ] T028 Verify the history toggle and entry-row buttons show visible keyboard focus indicators and meet ≥4.5:1 contrast, using only existing `styles/tokens.css` values (no new tokens introduced) — **Modifies:** `src/components/HistoryToggle.css` / `src/components/HistoryPanel.css` only if adjustments are found necessary (constitution Principle IV) (depends on T025)
+- [ ] T029 [P] Confirm `src/domain/calculator.ts`, `src/domain/calculator.types.ts`, and `src/domain/keymap.ts` are byte-for-byte identical to round 1 (e.g. `git diff 001-web-calculator -- src/domain/calculator.ts src/domain/calculator.types.ts src/domain/keymap.ts` shows no output) — the concrete, checkable form of plan.md's Constitution Check. **No files modified** by this task — it is a verification gate; if it fails, the correct fix is to move the offending logic into `history.ts`/`useCalculator.ts`'s additive callback, not to accept the diff (depends on T025)
+- [ ] T030 [P] Confirm `src/domain/history.ts` and `src/domain/history.types.ts` contain no `react`, `react-dom`, or DOM imports (Principle II applied to the new pure module too). **No files modified** by this task — verification only (depends on T025)
+- [ ] T031 Run the full quickstart.md manual validation checklist end-to-end — including step 1's round-1-regression pass — and fix any discrepancies found (depends on T026, T027, T028, T029, T030)
 
 ---
 
@@ -136,7 +135,7 @@ Single frontend project per plan.md's Structure Decision — `src/` at the repos
 - **User Story 1 (Phase 3)**: Depends on Foundational only.
 - **User Story 2 (Phase 4)**: Depends on Foundational; its `useCalculator.ts` edit (T016) is sequenced after US1's `useCalculator.ts` edit (T009) since both touch the same file, but US2 does not depend on US1's history-capture logic being exercised — reuse works on any entry already in `entries`, however it got there.
 - **User Story 3 (Phase 5)**: Depends on Foundational; its `useHistory.ts` edit (T023) is sequenced after US2's (T017) for the same same-file reason, with no functional dependency on reuse.
-- **Polish (Phase 6)**: Depends on all three stories (T026) so every interaction path exists before final verification.
+- **Polish (Phase 6)**: Depends on all three stories (T025) so every interaction path exists before final verification.
 
 ### Within Each User Story
 
@@ -150,8 +149,7 @@ Single frontend project per plan.md's Structure Decision — `src/` at the repos
 - T003, T004, T005 (Foundational) can run together once T002 is done (three different files).
 - T009 and T012 (US1) touch different files (`useCalculator.ts`, `HistoryPanel.tsx`) than the T007/T008 domain-test-then-impl pair and than each other — all four can proceed in parallel once their individual dependencies (T001/T002/T007/T004) are met.
 - T016 and T019 (US2) similarly touch different files than T014/T015 and than each other.
-- T024 (US3) touches a different file than T021/T022/T023.
-- T027, T030, and T031 (Polish) can run together.
+- T026, T029, and T030 (Polish) can run together.
 
 ---
 
@@ -181,7 +179,7 @@ Task: "Render real entry rows in src/components/HistoryPanel.tsx"
 1. Complete Phase 1: Setup (T001)
 2. Complete Phase 2: Foundational (T002-T006) — blocks everything else
 3. Complete Phase 3: User Story 1 (T007-T013)
-4. **STOP and VALIDATE**: run `npm run test`, then walk through quickstart.md steps 1-2 by hand, and confirm T030's engine-diff check passes
+4. **STOP and VALIDATE**: run `npm run test`, then walk through quickstart.md steps 1-2 by hand, and confirm T029's engine-diff check passes
 5. This is a working, demoable "view your recent calculations" feature, with round 1 provably untouched
 
 ### Incremental Delivery
@@ -192,4 +190,4 @@ Task: "Render real entry rows in src/components/HistoryPanel.tsx"
 4. + User Story 3 → clear history → validate → demo
 5. + Polish → layout/accessibility/CHANGELOG/engine-purity verification → ship
 
-Each step adds value without breaking the previous one or round 1: every story after Foundational only adds new `history.ts` functions and small, additive `useCalculator.ts`/`useHistory.ts`/`HistoryPanel.tsx` wiring — it never changes an already-shipped function's signature, and `calculator.ts`/`calculator.types.ts`/`keymap.ts` are never touched at all (verified explicitly by T030).
+Each step adds value without breaking the previous one or round 1: every story after Foundational only adds new `history.ts` functions and small, additive `useCalculator.ts`/`useHistory.ts`/`HistoryPanel.tsx` wiring — it never changes an already-shipped function's signature, and `calculator.ts`/`calculator.types.ts`/`keymap.ts` are never touched at all (verified explicitly by T029).
