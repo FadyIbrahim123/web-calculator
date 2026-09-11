@@ -1,0 +1,56 @@
+# Research: Calculation History
+
+**Feature**: [spec.md](./spec.md) | **Plan**: [plan.md](./plan.md)
+
+The technology stack (React 18 + TypeScript strict + Vite + Vitest, plain CSS, no backend) is inherited unchanged from round 1 (`001-web-calculator`), so there are no framework-choice questions here. What this document resolves is how a session-only, 5-entry history can be layered on top of round 1's already-shipped, already-tested pure engine **without modifying it** — the constraint the constitution's Principle II (Pure Logic Core) and spec FR-011 both make explicit — plus the mechanics needed to satisfy the clarified retention/reuse/layout decisions.
+
+## 1. Where completed calculations are captured (the load-bearing decision)
+
+- **Decision**: Capture a history entry at the moment `equals` is invoked, not by inspecting `CalculatorState` afterward. Concretely, `useCalculator` gains one optional constructor parameter, `onEqualsComplete?: (entry: { firstOperand: number; operator: Operator; secondOperand: number; result: CalculatorState }) => void`. Both existing call sites that already invoke the engine's `equals(state)` — the `onEquals` handler (mouse/touch) and the keydown `"equals"` case (keyboard) — snapshot `state.previousOperand`, `state.operator`, and `Number(state.display)` *before* calling `equals`, then call `onEqualsComplete` with that snapshot plus the resulting state, but only when the result is not an error (`!result.isError`).
+- **Rationale**: `equals()` already clears `previousOperand`/`operator` to `null` on success (by design — see round 1's `calculator.ts`), so the expression is only recoverable *before* the call, not after. The alternative of diffing `CalculatorState` before/after in a `useEffect` was rejected (see below) because the post-equals state shape (`operator: null, awaitingSecondOperand: false, isError: false`) is indistinguishable from plain digit-entry state — there is no reliable way to detect "a calculation just completed via equals" from state alone. Capturing at the call site is the only point where the distinction is unambiguous, and it requires zero changes to the engine's function signatures or state shape.
+- **Alternatives considered**:
+  - **Add an `expression`/`lastResult` field to `CalculatorState` itself.** Rejected — this is exactly the "fork the engine" outcome the constitution check is designed to catch: it would bloat the engine's state with a UI-only concern (history) that the engine must otherwise stay unaware of (FR-011), and it would touch `calculator.ts`'s `equals()` in a way that changes its existing, already-tested return shape.
+  - **Diff `CalculatorState` across renders in `useEffect`.** Rejected for the ambiguity reason above (false positives/negatives distinguishing "just computed via equals" from "just typed a digit").
+  - **Duplicate capture logic separately in the click handler and the keydown handler.** Rejected — two independent copies of the same snapshot-then-call logic is exactly the kind of drift Principle I warns about, and round 1's own research.md (#5) already established "both paths call the identical function" as the pattern for keeping button/keyboard behavior from diverging; the callback keeps that property for history too.
+
+## 2. History List shape and eviction (spec FR-004, Clarifications: 5 entries)
+
+- **Decision**: `history.ts` exports `recordEntry(history: HistoryEntry[], entry: HistoryEntry): HistoryEntry[]`, implemented as `[entry, ...history].slice(0, MAX_HISTORY_ENTRIES)` with `MAX_HISTORY_ENTRIES = 5`. The dropped 6th-oldest entry is simply not present in the returned array — no "trash"/undo, matching the clarified "not shown or accessible anywhere."
+- **Rationale**: A plain bounded array with prepend-and-slice is the simplest structure that satisfies "most-recent-first" ordering (FR-003) and the 5-entry cap in one operation; it needs no extra bookkeeping (e.g., no separate index/pointer structure).
+- **Alternatives considered**: A ring buffer with a fixed-size backing array and write index — rejected as needless complexity (Principle I) for a 5-element list re-rendered on every change; a circular structure only pays off at sizes/update-frequencies far beyond this feature's scope.
+
+## 3. Entry identity (for React list rendering, not for the engine)
+
+- **Decision**: The caller of `recordEntry` (the `useHistory` hook) supplies a pre-built `id` (a simple incrementing counter held in a `useRef`) as part of the `HistoryEntry` it passes in; `history.ts`'s functions themselves take no randomness/time dependency and stay pure.
+- **Rationale**: Keeping `recordEntry`/`clearHistory`/`restoreState` free of `Date.now()`/`crypto.randomUUID()` calls keeps them trivially unit-testable with plain equality assertions (Principle III) — a pure function's output should depend only on its inputs. Id generation is an orchestration concern, so it belongs in the hook, same layering already used for the engine itself (`useCalculator` owns `useState`, `calculator.ts` owns pure transitions).
+- **Alternatives considered**: Generating `id` inside `history.ts` via `crypto.randomUUID()` — rejected only for testability/purity hygiene, not because it would be wrong; it would make `recordEntry`'s output non-deterministic and harder to assert on directly in tests.
+
+## 4. Reuse mechanics (spec FR-005, Clarifications: recall the whole expression, replace what's displayed)
+
+- **Decision**: `history.ts` exports a pure `restoreState(entry: HistoryEntry): CalculatorState` returning `{ display: entry.result, previousOperand: null, operator: null, awaitingSecondOperand: false, isError: false }` — i.e., the same state shape the engine itself already produces immediately after a successful `equals()`. `useCalculator` gains one more small addition: an exposed `onRestore: (state: CalculatorState) => void` handler that does `setState(state)` directly (no new engine transition function needed, since setting to an already-valid `CalculatorState` is not a "calculation," just loading a value the engine already knows how to continue from).
+- **Rationale**: The spec's "recall the whole expression" requirement is about what the *history entry itself* stores and displays to the user (so the panel can show `12 + 7 = 19`, satisfying FR-001/FR-003) — it does not require the calculator to re-execute `selectOperator` → `inputDigit` → `equals` through the engine to arrive at a state that is, observably, identical to just setting `display` to the result. Continuing a calculation from a reused entry (User Story 2, Acceptance Scenario 3) then proceeds through the completely ordinary "start a new operation from the current display value" path `selectOperator` already implements for any post-equals state — no engine change needed here either.
+- **Alternatives considered**: Replaying the recalled expression through the real engine functions (`selectOperator(entry.operator)` → set display to `secondOperand` → `equals()`) to "genuinely" reconstruct it — rejected as unnecessary indirection (Principle I/YAGNI) that produces an identical observable result to the simpler direct-state approach, while introducing a risk of re-triggering rounding/overflow formatting a second time for a value that was already correctly formatted once.
+
+## 5. Panel placement at narrow widths (spec Clarifications: behind the keypad, 375px)
+
+- **Decision**: `HistoryPanel` is rendered unconditionally in the DOM but visually presented as a `position: fixed` (or `absolute`, scoped to the calculator container) overlay layered above the app, toggled via a class/attribute driven by `useHistory`'s `isOpen` state, rather than being inserted into the normal document flow next to or below the keypad.
+- **Rationale**: This is the only one of the three placement options (beside/below/behind) that structurally guarantees the keypad's own flex/grid layout is never recalculated when history opens or closes — it satisfies FR-008's "never resizes, reflows, or repositions the keypad" as a property of the layout mechanism itself, not as something that has to be separately verified at every breakpoint.
+- **Alternatives considered**: **Beside** — rejected outright; there is no spare horizontal space at 320–375px (round 1's own minimum-width commitment), so an inline side panel would either shrink the keypad or overflow. **Below** — rejected because inserting the panel into normal flow pushes the keypad down/off-screen on short viewports, which is closer to "getting in the way" than any placement should be for a feature explicitly required not to.
+
+## 6. Styling approach
+
+- **Decision**: `HistoryPanel.css`/`HistoryToggle` styling consumes only the existing tokens in `styles/tokens.css` (color, spacing, radius, type scale, focus ring) — no new design tokens are introduced, no CSS framework.
+- **Rationale**: Reuses round 1's already-validated contrast/focus/spacing decisions (constitution Principle IV) instead of re-deriving them; keeps the new UI visually consistent with the existing calculator without new design work in scope.
+- **Alternatives considered**: None — this follows directly from round 1's research.md #6 decision, which this feature has no reason to revisit.
+
+## 7. Keyboard bindings for history actions
+
+- **Decision**: No new keyboard bindings are added to `keymap.ts` for opening/closing the history panel, selecting an entry, or clearing history. These actions are mouse/touch-only for this feature.
+- **Rationale**: Unlike round 1, where full keyboard operability was an explicit, numbered functional requirement (FR-007) for every calculator action, this feature's spec (`002-calculation-history/spec.md`) makes no equivalent requirement for history-specific interactions — its User Stories describe viewing/reusing/clearing without mandating a keyboard path. Adding bindings speculatively would be scope creep against Principle I (YAGNI) and would also require touching `keymap.ts`, which the engine-boundary table in `plan.md` commits to leaving unchanged.
+- **Alternatives considered**: Mirror round 1's full keyboard coverage for symmetry — rejected as out-of-scope; if a future spec adds this requirement, `keymap.ts` can be extended then without any of this feature's other decisions changing.
+
+## 8. Testing strategy
+
+- **Decision**: Vitest unit tests for `history.ts` cover `recordEntry`'s 5-entry cap and FIFO eviction, `clearHistory`, and `restoreState`'s output shape — written before the implementation (Principle III), same discipline as round 1's `calculator.test.ts`. Vitest + React Testing Library component tests cover: empty state, an entry appearing after a completed calculation, an entry NOT appearing after an error (`N/A`) result, reuse replacing the display, and clear emptying the list — one test per spec Acceptance Scenario, mirroring round 1's approach of asserting on rendered output only. The `useCalculator` addition (`onEqualsComplete`, `onRestore`) is covered by a small addition to its existing test file, not a rewrite.
+- **Rationale**: Matches Principle III and gives every spec Acceptance Scenario a corresponding automated test, consistent with round 1.
+- **Alternatives considered**: None — this directly extends round 1's established testing approach (research.md #7 there) to the new module/components.
