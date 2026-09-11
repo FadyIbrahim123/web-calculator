@@ -31,5 +31,6 @@
 
 ## Notes
 
-- Two decisions that had multiple reasonable interpretations (history persistence across reloads; what "reuse" does) were resolved with documented reasoning in the spec's Clarifications section rather than left open, favoring the more privacy-conservative and lowest-friction option in each case.
+- All open decisions (history persistence across reloads, the 5-entry retention cap and eviction rule, "reuse" semantics, and panel placement on a 375px screen) were resolved in the Clarifications section — see the `Session 2026-09-11` entries. The initial "reuse" answer from specification was explicitly superseded, not duplicated.
 - The spec explicitly documents a breaking change to round 1 (`001-web-calculator`): its "no calculation history in scope" assumption is superseded. See "Relationship to Existing Calculator (Round 1)".
+- FR-011 records an explicit architectural constraint (the history feature must not modify or depend on the core calculation engine's internals) per user request that history not "contaminate the pure engine."
