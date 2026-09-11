@@ -1,0 +1,41 @@
+.calc-button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: var(--space-3);
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: var(--font-family);
+  font-size: var(--font-size-button);
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--color-surface);
+  color: var(--color-text);
+  transition: filter 0.1s ease;
+}
+
+.calc-button:hover {
+  filter: brightness(1.15);
+}
+
+.calc-button:active {
+  filter: brightness(0.9);
+}
+
+.calc-button:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.calc-button--operator {
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+}
+
+.calc-button--action {
+  background: var(--color-danger);
+  color: var(--color-danger-text);
+}
+
+.calc-button--wide {
+  grid-column: span 2;
+}

@@ -1,0 +1,27 @@
+.display {
+  background: var(--color-display-bg);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+  margin-bottom: var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 4.5rem;
+  overflow: hidden;
+}
+
+.display__value {
+  font-size: var(--font-size-display);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.display__value--message {
+  font-size: var(--font-size-button);
+  white-space: normal;
+  text-align: right;
+}
