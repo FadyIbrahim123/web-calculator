@@ -1,0 +1,31 @@
+.history-toggle {
+  position: relative;
+  z-index: 11;
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin-bottom: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: var(--font-family);
+  font-size: var(--font-size-small);
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--color-surface);
+  color: var(--color-text);
+  transition: filter 0.1s ease;
+}
+
+.history-toggle:hover {
+  filter: brightness(1.15);
+}
+
+.history-toggle:active {
+  filter: brightness(0.9);
+}
+
+.history-toggle:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}

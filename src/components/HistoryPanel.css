@@ -1,0 +1,83 @@
+.history-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-width: 360px;
+  margin: 0 auto;
+  /* Extra top padding clears the HistoryToggle button, which stays above
+     this overlay (see HistoryToggle.css) so it remains clickable to close
+     the panel again — without this, the toggle would visually sit on top
+     of the panel's own first row of content. */
+  padding: 92px var(--space-4) var(--space-4);
+  background: var(--color-bg);
+  overflow-y: auto;
+}
+
+.history-panel__empty {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-small);
+}
+
+.history-panel__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.history-panel__entry {
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-3);
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: var(--font-family);
+  font-size: var(--font-size-button);
+  text-align: left;
+  cursor: pointer;
+  background: var(--color-surface);
+  color: var(--color-text);
+  transition: filter 0.1s ease;
+}
+
+.history-panel__entry:hover {
+  filter: brightness(1.15);
+}
+
+.history-panel__entry:active {
+  filter: brightness(0.9);
+}
+
+.history-panel__entry:focus-visible,
+.history-panel__clear:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.history-panel__clear {
+  margin-top: auto;
+  min-height: 44px;
+  padding: var(--space-3);
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: var(--font-family);
+  font-size: var(--font-size-button);
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--color-danger);
+  color: var(--color-danger-text);
+  transition: filter 0.1s ease;
+}
+
+.history-panel__clear:hover {
+  filter: brightness(1.15);
+}
+
+.history-panel__clear:active {
+  filter: brightness(0.9);
+}

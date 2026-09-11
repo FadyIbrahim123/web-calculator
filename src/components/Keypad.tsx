@@ -12,7 +12,7 @@ export interface KeypadProps {
   onBackspace: () => void;
 }
 
-const OPERATOR_LABELS: Record<Operator, string> = {
+export const OPERATOR_LABELS: Record<Operator, string> = {
   add: "+",
   subtract: "-",
   multiply: "×",
